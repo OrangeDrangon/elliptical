@@ -53,11 +53,50 @@ impl EllipticalPointValue {
         Self { x, y }
     }
 
+    pub fn compress(&self, point: &EllipticalPointValue) -> EllipticalCompressedPointValue {
+        EllipticalCompressedPointValue::new(point)
+    }
+
     pub fn x(&self) -> &BigInt {
         &self.x
     }
     pub fn y(&self) -> &BigInt {
         &self.y
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum EllipticalCompressedPointParity {
+    Odd,
+    Even,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EllipticalCompressedPointValue {
+    x: BigInt,
+    parity: EllipticalCompressedPointParity,
+}
+
+impl EllipticalCompressedPointValue {
+    fn new(point: &EllipticalPointValue) -> Self {
+        let parity = if point.y().is_even() {
+            EllipticalCompressedPointParity::Even
+        } else {
+            EllipticalCompressedPointParity::Odd
+        };
+
+        Self {
+            x: point.x().clone(),
+            parity,
+        }
+    }
+
+    pub fn x(&self) -> &BigInt {
+        &self.x
+    }
+
+    pub fn parity(&self) -> EllipticalCompressedPointParity {
+        self.parity.clone()
     }
 }
 
@@ -255,6 +294,27 @@ impl EllipticalCurve {
         }
 
         result.clone()
+    }
+
+    pub fn uncompress(&self, compressed: &EllipticalCompressedPointValue) -> EllipticalPoint {
+        let raw_y_squared =
+            compressed.x().pow(3) + self.params().a() * compressed.x() + self.params().b();
+        let y = raw_y_squared.sqrt().elliptical_mod(self.params().p());
+
+        // if the pairty matches the parity of the calculated y dont subtract from the prime
+        let actual_y = if compressed.parity() == EllipticalCompressedPointParity::Odd && y.is_odd()
+            || compressed.parity() == EllipticalCompressedPointParity::Even && y.is_even()
+        {
+            y
+        } else {
+            self.params().p() - y
+        };
+
+        let point = EllipticalPoint::with_value(compressed.x().clone(), actual_y);
+
+        assert!(self.contains_point(&point));
+
+        point
     }
 
     pub fn params(&self) -> &EllipticalCurveParameters {
