@@ -1,5 +1,5 @@
-use num::bigint::Sign;
 use num::{BigInt, BigUint, Integer, One, Zero};
+use num::bigint::Sign;
 
 trait EllipticalCurveOperations {
     type Output;
@@ -78,16 +78,25 @@ impl EllipticalCurveParameters {
         Self::generic(
             BigInt::zero(),
             BigInt::new(Sign::Plus, vec![7]),
-            BigInt::parse_bytes(b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 16).unwrap()
-            // BigInt::from_bytes_be(
-                // Sign::Plus,
-                // &[
-                //     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                //     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                //     0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
-                // ],
-        // ),
+            BigInt::parse_bytes(b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 16).unwrap(),
         )
+    }
+
+    // Inclusive bounds for the order of all elliptic curves with a given `p`
+    pub fn order_bounds(&self) -> (BigInt, BigInt) {
+        let start = self.p() + BigInt::one();
+        let end = BigInt::from(2) * self.p().sqrt();
+        let lower = &start - &end;
+        let upper = &start + &end;
+
+        (lower, upper)
+    }
+
+    pub fn j_invariant(&self) -> BigInt {
+        let four_a_cubed = BigInt::from(4) * self.a().pow(3);
+        let twenty_seven_b_squared = BigInt::from(27) * self.p().pow(2);
+
+        BigInt::from(-1728) * (&four_a_cubed / (&four_a_cubed + &twenty_seven_b_squared))
     }
 
     pub fn a(&self) -> &BigInt {
@@ -105,35 +114,50 @@ impl EllipticalCurveParameters {
 pub struct EllipticalCurve {
     params: EllipticalCurveParameters,
     generator: EllipticalPoint,
+    order: BigInt,
 }
 
 impl EllipticalCurve {
-    pub fn generic(params: EllipticalCurveParameters, generator: EllipticalPointValue) -> Self {
+    pub fn generic_with_order(params: EllipticalCurveParameters, generator: EllipticalPointValue, order: BigInt) -> Self {
         let s = Self {
             params,
             generator: EllipticalPoint::Value(generator),
+            order,
         };
 
         assert!(s.contains_point(s.generator()));
 
+        let (lower, upper) = s.params().order_bounds();
+        assert!(s.order() >= &lower && s.order() <= &upper);
+
         s
+    }
+
+    pub fn generic(params: EllipticalCurveParameters, generator: EllipticalPointValue) -> Self {
+        let (lower, _) = params.order_bounds();
+
+        Self::generic_with_order(params, generator, lower)
     }
 
     pub fn secp256k1() -> Self {
         let params = EllipticalCurveParameters::scep256k1();
+
         let generator = EllipticalPointValue::new(
             BigInt::parse_bytes(
                 b"79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
                 16,
             )
-            .unwrap(),
+                .unwrap(),
             BigInt::parse_bytes(
                 b"483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
                 16,
             )
-            .unwrap(),
+                .unwrap(),
         );
-        EllipticalCurve::generic(params, generator)
+
+        let order = BigInt::parse_bytes(b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16).unwrap();
+
+        EllipticalCurve::generic_with_order(params, generator, order)
     }
 
     pub fn contains_point(&self, point: &EllipticalPoint) -> bool {
@@ -229,6 +253,8 @@ impl EllipticalCurve {
         &self.generator
     }
 
+    pub fn order(&self) -> &BigInt { &self.order }
+
     fn get_double_lambda(&self, point: &EllipticalPointValue) -> BigInt {
         let numerator = BigInt::from(3) * point.x().pow(2) + self.params().a();
         numerator * (BigInt::from(2) * point.y()).elliptical_inverse_mod(self.params().p())
@@ -250,6 +276,27 @@ impl EllipticalCurve {
             }
         }
     }
+
+    /// Utility constructor for testing
+    #[cfg(test)]
+    pub fn test_0_7_37() -> Self {
+        let params =
+            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
+
+        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
+
+        EllipticalCurve::generic(params, generator)
+    }
+
+    /// Utility constructor for testing
+    #[cfg(test)]
+    pub fn test_25_15_15661() -> Self {
+        let params = EllipticalCurveParameters::generic(BigInt::from(25), BigInt::from(15), BigInt::from(15661));
+
+        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
+
+        EllipticalCurve::generic(params, generator)
+    }
 }
 
 #[cfg(test)]
@@ -258,12 +305,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_identity_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::Identity;
 
@@ -275,12 +317,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_6_1_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
 
@@ -292,12 +329,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_9_12_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
 
@@ -309,12 +341,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_add_6_1_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
         let q = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
@@ -327,12 +354,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_add_9_12_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
         let q = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
@@ -345,12 +367,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_identity_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::Identity;
@@ -363,12 +380,7 @@ mod test {
 
     #[test]
     fn test_point_add_6_1_plus_identity_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
         let q = EllipticalPoint::Identity;
@@ -381,12 +393,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_22_6_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
@@ -399,12 +406,7 @@ mod test {
 
     #[test]
     fn test_point_add_4_2_plus_4_16_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(4), BigInt::from(21));
         let q = EllipticalPoint::with_value(BigInt::from(4), BigInt::from(16));
@@ -417,12 +419,7 @@ mod test {
 
     #[test]
     fn test_add_6_1_plus_22_6_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
         let q = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
@@ -435,12 +432,7 @@ mod test {
 
     #[test]
     fn test_add_9_12_plus_32_17_curve_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
         let q = EllipticalPoint::with_value(BigInt::from(32), BigInt::from(17));
@@ -453,12 +445,7 @@ mod test {
 
     #[test]
     fn test_multiply_9_12_times_1_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
 
@@ -470,12 +457,7 @@ mod test {
 
     #[test]
     fn test_multiply_9_12_times_2_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
 
@@ -487,12 +469,7 @@ mod test {
 
     #[test]
     fn test_multiply_23_1_times_123_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
 
@@ -504,12 +481,7 @@ mod test {
 
     #[test]
     fn test_multiply_23_1_times_34435322_0_7_37() {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
 
@@ -520,16 +492,20 @@ mod test {
     }
 
     #[test]
+    fn test_multiply_23_1_times_0_0_7_37() {
+        let curve = EllipticalCurve::test_0_7_37();
+
+        let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
+
+        let expected = EllipticalPoint::Identity;
+        let result = curve.multiply_unsigned(&p, &BigUint::zero());
+
+        assert_eq!(expected, result)
+    }
+
+    #[test]
     fn test_point_doubling_identity_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::Identity;
 
@@ -541,15 +517,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_233_33_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
 
@@ -561,15 +529,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_add_6_1_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
         let q = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
@@ -582,15 +542,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_identity_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::Identity;
@@ -603,15 +555,7 @@ mod test {
 
     #[test]
     fn test_point_add_94_54_plus_identity_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
         let q = EllipticalPoint::Identity;
@@ -624,15 +568,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_21_99_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
@@ -645,15 +581,7 @@ mod test {
 
     #[test]
     fn test_add_6_1_plus_22_6_curve_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
         let q = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
@@ -666,15 +594,7 @@ mod test {
 
     #[test]
     fn test_add_94_54_plus_32_17_curve_11946_4901_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
         let q = EllipticalPoint::with_value(BigInt::from(11946), BigInt::from(4901));
@@ -684,17 +604,10 @@ mod test {
 
         assert_eq!(expected, result)
     }
+
     #[test]
     fn test_multiply_94_54_times_1_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
 
@@ -706,15 +619,7 @@ mod test {
 
     #[test]
     fn test_multiply_94_54_times_2_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
 
@@ -726,15 +631,7 @@ mod test {
 
     #[test]
     fn test_multiply_460_120_times_123_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(460), BigInt::from(120));
 
@@ -746,15 +643,7 @@ mod test {
 
     #[test]
     fn test_multiply_460_120_times_34435322_25_15_15661() {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        let curve = EllipticalCurve::generic(params, generator);
+        let curve = EllipticalCurve::test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(460), BigInt::from(120));
 
