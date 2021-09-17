@@ -290,10 +290,13 @@ impl EllipticalCurve {
             }
         }
     }
+}
 
-    /// Utility constructor for testing
-    #[cfg(test)]
-    pub fn test_0_7_37() -> Self {
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn test_0_7_37() -> EllipticalCurve {
         let params =
             EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
 
@@ -302,9 +305,7 @@ impl EllipticalCurve {
         EllipticalCurve::generic(params, generator)
     }
 
-    /// Utility constructor for testing
-    #[cfg(test)]
-    pub fn test_25_15_15661() -> Self {
+    fn test_25_15_15661() -> EllipticalCurve {
         let params = EllipticalCurveParameters::generic(
             BigInt::from(25),
             BigInt::from(15),
@@ -315,15 +316,10 @@ impl EllipticalCurve {
 
         EllipticalCurve::generic(params, generator)
     }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
 
     #[test]
     fn test_point_doubling_identity_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::Identity;
 
@@ -335,7 +331,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_6_1_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
 
@@ -347,7 +343,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_9_12_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
 
@@ -359,7 +355,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_add_6_1_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
         let q = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
@@ -372,7 +368,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_add_9_12_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
         let q = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
@@ -385,7 +381,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_identity_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::Identity;
@@ -398,7 +394,7 @@ mod test {
 
     #[test]
     fn test_point_add_6_1_plus_identity_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
         let q = EllipticalPoint::Identity;
@@ -411,7 +407,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_22_6_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
@@ -424,7 +420,7 @@ mod test {
 
     #[test]
     fn test_point_add_4_2_plus_4_16_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(4), BigInt::from(21));
         let q = EllipticalPoint::with_value(BigInt::from(4), BigInt::from(16));
@@ -437,7 +433,7 @@ mod test {
 
     #[test]
     fn test_add_6_1_plus_22_6_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
         let q = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
@@ -450,7 +446,7 @@ mod test {
 
     #[test]
     fn test_add_9_12_plus_32_17_curve_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
         let q = EllipticalPoint::with_value(BigInt::from(32), BigInt::from(17));
@@ -463,7 +459,7 @@ mod test {
 
     #[test]
     fn test_multiply_9_12_times_1_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
 
@@ -475,7 +471,7 @@ mod test {
 
     #[test]
     fn test_multiply_9_12_times_2_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
 
@@ -487,7 +483,7 @@ mod test {
 
     #[test]
     fn test_multiply_23_1_times_123_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
 
@@ -499,7 +495,7 @@ mod test {
 
     #[test]
     fn test_multiply_23_1_times_34435322_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
 
@@ -511,7 +507,7 @@ mod test {
 
     #[test]
     fn test_multiply_23_1_times_0_0_7_37() {
-        let curve = EllipticalCurve::test_0_7_37();
+        let curve = test_0_7_37();
 
         let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
 
@@ -523,7 +519,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_identity_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::Identity;
 
@@ -535,7 +531,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_233_33_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
 
@@ -547,7 +543,7 @@ mod test {
 
     #[test]
     fn test_point_doubling_add_6_1_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
         let q = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
@@ -560,7 +556,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_identity_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::Identity;
@@ -573,7 +569,7 @@ mod test {
 
     #[test]
     fn test_point_add_94_54_plus_identity_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
         let q = EllipticalPoint::Identity;
@@ -586,7 +582,7 @@ mod test {
 
     #[test]
     fn test_point_add_identity_plus_21_99_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::Identity;
         let q = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
@@ -599,7 +595,7 @@ mod test {
 
     #[test]
     fn test_add_6_1_plus_22_6_curve_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
         let q = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
@@ -612,7 +608,7 @@ mod test {
 
     #[test]
     fn test_add_94_54_plus_32_17_curve_11946_4901_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
         let q = EllipticalPoint::with_value(BigInt::from(11946), BigInt::from(4901));
@@ -625,7 +621,7 @@ mod test {
 
     #[test]
     fn test_multiply_94_54_times_1_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
 
@@ -637,7 +633,7 @@ mod test {
 
     #[test]
     fn test_multiply_94_54_times_2_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
 
@@ -649,7 +645,7 @@ mod test {
 
     #[test]
     fn test_multiply_460_120_times_123_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(460), BigInt::from(120));
 
@@ -661,7 +657,7 @@ mod test {
 
     #[test]
     fn test_multiply_460_120_times_34435322_25_15_15661() {
-        let curve = EllipticalCurve::test_25_15_15661();
+        let curve = test_25_15_15661();
 
         let p = EllipticalPoint::with_value(BigInt::from(460), BigInt::from(120));
 
