@@ -3,30 +3,34 @@ use num::{BigInt, BigUint, Integer, One, Zero};
 
 trait EllipticalCurveOperations {
     type Output;
-    fn elliptical_mod(&self, n: &Self::Output) -> Self::Output;
-    fn elliptical_inverse_mod(&self, n: &Self::Output) -> Self::Output;
+    fn elliptical_mod(&self, modulus: &Self::Output) -> Self::Output;
+    fn elliptical_inverse_mod(&self, modulus: &Self::Output) -> Self::Output;
+    fn elliptical_modpow(&self, exponent: &Self::Output, modulus: &Self::Output) -> Self::Output;
+    fn elliptical_sqrt_mod(&self, modulus: &Self::Output) -> Self::Output;
 }
 
 impl EllipticalCurveOperations for BigInt {
     type Output = Self;
-    fn elliptical_mod(&self, n: &Self::Output) -> Self::Output {
-        let mut r = self % n;
-
-        if r < BigInt::zero() {
-            r += n;
-        }
-
-        r
+    fn elliptical_mod(&self, modulus: &Self::Output) -> Self::Output {
+        self.mod_floor(modulus)
     }
 
-    fn elliptical_inverse_mod(&self, n: &Self::Output) -> Self::Output {
-        let gcd = self.extended_gcd(n);
+    fn elliptical_inverse_mod(&self, modulus: &Self::Output) -> Self::Output {
+        let gcd = self.extended_gcd(modulus);
 
         if gcd.gcd != 1.into() {
             panic!("No inv mod");
         }
 
-        gcd.x.elliptical_mod(n)
+        gcd.x.elliptical_mod(modulus)
+    }
+
+    fn elliptical_modpow(&self, exponent: &Self::Output, modulus: &Self::Output) -> Self::Output {
+        self.modpow(exponent, modulus)
+    }
+
+    fn elliptical_sqrt_mod(&self, modulus: &Self::Output) -> Self::Output {
+        self.sqrt().elliptical_mod(modulus)
     }
 }
 
@@ -215,7 +219,9 @@ impl EllipticalCurve {
         match point {
             EllipticalPoint::Identity => true,
             EllipticalPoint::Value(p) => {
-                let calculated_y = p.x().pow(3) + self.params().a() * p.x() + self.params().b();
+                let calculated_y = p.x().elliptical_modpow(&BigInt::from(3), self.params().p())
+                    + self.params().a() * p.x()
+                    + self.params().b();
                 let y_squared = p.y().pow(2);
 
                 (calculated_y - y_squared).elliptical_mod(self.params().p()) == BigInt::zero()
@@ -299,7 +305,7 @@ impl EllipticalCurve {
     pub fn uncompress(&self, compressed: &EllipticalCompressedPointValue) -> EllipticalPoint {
         let raw_y_squared =
             compressed.x().pow(3) + self.params().a() * compressed.x() + self.params().b();
-        let y = raw_y_squared.sqrt().elliptical_mod(self.params().p());
+        let y = raw_y_squared.elliptical_sqrt_mod(self.params().p());
 
         // if the pairty matches the parity of the calculated y dont subtract from the prime
         let actual_y = if compressed.parity() == EllipticalCompressedPointParity::Odd && y.is_odd()
