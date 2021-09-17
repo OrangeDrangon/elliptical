@@ -1,5 +1,5 @@
-use num::{BigInt, BigUint, Integer, One, Zero};
 use num::bigint::Sign;
+use num::{BigInt, BigUint, Integer, One, Zero};
 
 trait EllipticalCurveOperations {
     type Output;
@@ -78,7 +78,11 @@ impl EllipticalCurveParameters {
         Self::generic(
             BigInt::zero(),
             BigInt::new(Sign::Plus, vec![7]),
-            BigInt::parse_bytes(b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 16).unwrap(),
+            BigInt::parse_bytes(
+                b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F",
+                16,
+            )
+            .unwrap(),
         )
     }
 
@@ -118,7 +122,11 @@ pub struct EllipticalCurve {
 }
 
 impl EllipticalCurve {
-    pub fn generic_with_order(params: EllipticalCurveParameters, generator: EllipticalPointValue, order: BigInt) -> Self {
+    pub fn generic_with_order(
+        params: EllipticalCurveParameters,
+        generator: EllipticalPointValue,
+        order: BigInt,
+    ) -> Self {
         let s = Self {
             params,
             generator: EllipticalPoint::Value(generator),
@@ -147,15 +155,19 @@ impl EllipticalCurve {
                 b"79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
                 16,
             )
-                .unwrap(),
+            .unwrap(),
             BigInt::parse_bytes(
                 b"483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
                 16,
             )
-                .unwrap(),
+            .unwrap(),
         );
 
-        let order = BigInt::parse_bytes(b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16).unwrap();
+        let order = BigInt::parse_bytes(
+            b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
+            16,
+        )
+        .unwrap();
 
         EllipticalCurve::generic_with_order(params, generator, order)
     }
@@ -253,7 +265,9 @@ impl EllipticalCurve {
         &self.generator
     }
 
-    pub fn order(&self) -> &BigInt { &self.order }
+    pub fn order(&self) -> &BigInt {
+        &self.order
+    }
 
     fn get_double_lambda(&self, point: &EllipticalPointValue) -> BigInt {
         let numerator = BigInt::from(3) * point.x().pow(2) + self.params().a();
@@ -291,7 +305,11 @@ impl EllipticalCurve {
     /// Utility constructor for testing
     #[cfg(test)]
     pub fn test_25_15_15661() -> Self {
-        let params = EllipticalCurveParameters::generic(BigInt::from(25), BigInt::from(15), BigInt::from(15661));
+        let params = EllipticalCurveParameters::generic(
+            BigInt::from(25),
+            BigInt::from(15),
+            BigInt::from(15661),
+        );
 
         let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
 
