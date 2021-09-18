@@ -2,13 +2,13 @@ use num::{bigint::RandBigInt, BigInt, BigUint, Integer, One, Zero};
 
 trait EllipticalCurveOperations {
     type Output;
-    fn elliptical_inverse_mod(&self, modulus: &Self::Output) -> Self::Output;
-    fn elliptical_sqrt_mod(&self, modulus: &Self::Output) -> Self::Output;
+    fn inverse_mod(&self, modulus: &Self::Output) -> Self::Output;
+    fn sqrt_mod(&self, modulus: &Self::Output) -> Self::Output;
 }
 
 impl EllipticalCurveOperations for BigInt {
     type Output = Self;
-    fn elliptical_inverse_mod(&self, modulus: &Self::Output) -> Self::Output {
+    fn inverse_mod(&self, modulus: &Self::Output) -> Self::Output {
         let gcd = self.extended_gcd(modulus);
 
         if gcd.gcd != 1.into() {
@@ -19,7 +19,7 @@ impl EllipticalCurveOperations for BigInt {
     }
 
     /// sqrt mod as implemented here: https://github.com/tlsfuzzer/python-ecdsa/blob/master/src/ecdsa/numbertheory.py#L178
-    fn elliptical_sqrt_mod(&self, modulus: &Self::Output) -> Self::Output {
+    fn sqrt_mod(&self, modulus: &Self::Output) -> Self::Output {
         if self.is_zero() {
             return BigInt::zero();
         }
@@ -299,7 +299,7 @@ impl EllipticalCurve {
                 } else if p.x() != q.x() {
                     // Different x
                     let numerator = q.y() - p.y();
-                    Some(numerator * (q.x() - p.x()).elliptical_inverse_mod(self.params().p()))
+                    Some(numerator * (q.x() - p.x()).inverse_mod(self.params().p()))
                 } else {
                     None
                 };
@@ -344,7 +344,7 @@ impl EllipticalCurve {
             + self.params.b())
         .mod_floor(self.params().p());
 
-        let potential_y = y_squared.elliptical_sqrt_mod(self.params().p());
+        let potential_y = y_squared.sqrt_mod(self.params().p());
 
         let y = match EllipticalCompressedPointParity::from(&potential_y) == compressed.parity() {
             true => potential_y,
@@ -378,7 +378,7 @@ impl EllipticalCurve {
 
     fn get_double_lambda(&self, point: &EllipticalPointValue) -> BigInt {
         let numerator = BigInt::from(3) * point.x().pow(2) + self.params().a();
-        numerator * (BigInt::from(2) * point.y()).elliptical_inverse_mod(self.params().p())
+        numerator * (BigInt::from(2) * point.y()).inverse_mod(self.params().p())
     }
 
     fn summed_point_from_lambda(
