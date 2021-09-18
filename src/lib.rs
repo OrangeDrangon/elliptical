@@ -251,9 +251,7 @@ impl EllipticalCurve {
         match point {
             EllipticalPoint::Identity => true,
             EllipticalPoint::Value(p) => {
-                let calculated_y_squared = p.x().modpow(&BigInt::from(3), self.params().p())
-                    + self.params().a() * p.x()
-                    + self.params().b();
+                let calculated_y_squared = self.get_y_squared_from_x(p.x());
                 let y_squared = p.y().pow(2);
 
                 (calculated_y_squared - y_squared).mod_floor(self.params().p()) == BigInt::zero()
@@ -339,11 +337,7 @@ impl EllipticalCurve {
     }
 
     pub fn uncompress(&self, compressed: &EllipticalCompressedPointValue) -> EllipticalPoint {
-        let y_squared = (compressed.x().modpow(&BigInt::from(3), self.params().p())
-            + self.params.a() * compressed.x()
-            + self.params.b())
-        .mod_floor(self.params().p());
-
+        let y_squared = self.get_y_squared_from_x(compressed.x());
         let potential_y = y_squared.sqrt_mod(self.params().p());
 
         let y = match EllipticalCompressedPointParity::from(&potential_y) == compressed.parity() {
@@ -379,6 +373,11 @@ impl EllipticalCurve {
     fn get_double_lambda(&self, point: &EllipticalPointValue) -> BigInt {
         let numerator = BigInt::from(3) * point.x().pow(2) + self.params().a();
         numerator * (BigInt::from(2) * point.y()).inverse_mod(self.params().p())
+    }
+
+    fn get_y_squared_from_x(&self, x: &BigInt) -> BigInt {
+        (x.modpow(&BigInt::from(3), self.params().p()) + self.params.a() * x + self.params.b())
+            .mod_floor(self.params().p())
     }
 
     fn summed_point_from_lambda(
