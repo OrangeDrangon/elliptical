@@ -22,6 +22,43 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'elliptical'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=elliptical",
+                    "--package=elliptical"
+                ],
+                "filter": {
+                    "name": "elliptical",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'elliptical'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=elliptical",
+                    "--package=elliptical"
+                ],
+                "filter": {
+                    "name": "elliptical",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

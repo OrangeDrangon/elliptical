@@ -1,20 +1,13 @@
-use num::bigint::Sign;
-use num::{BigInt, BigUint, Integer, One, Zero};
+use num::{bigint::RandBigInt, BigInt, BigUint, Integer, One, Zero};
 
 trait EllipticalCurveOperations {
     type Output;
-    fn elliptical_mod(&self, modulus: &Self::Output) -> Self::Output;
     fn elliptical_inverse_mod(&self, modulus: &Self::Output) -> Self::Output;
-    fn elliptical_modpow(&self, exponent: &Self::Output, modulus: &Self::Output) -> Self::Output;
     fn elliptical_sqrt_mod(&self, modulus: &Self::Output) -> Self::Output;
 }
 
 impl EllipticalCurveOperations for BigInt {
     type Output = Self;
-    fn elliptical_mod(&self, modulus: &Self::Output) -> Self::Output {
-        self.mod_floor(modulus)
-    }
-
     fn elliptical_inverse_mod(&self, modulus: &Self::Output) -> Self::Output {
         let gcd = self.extended_gcd(modulus);
 
@@ -22,15 +15,40 @@ impl EllipticalCurveOperations for BigInt {
             panic!("No inv mod");
         }
 
-        gcd.x.elliptical_mod(modulus)
+        gcd.x.mod_floor(modulus)
     }
 
-    fn elliptical_modpow(&self, exponent: &Self::Output, modulus: &Self::Output) -> Self::Output {
-        self.modpow(exponent, modulus)
-    }
-
+    /// sqrt mod as implemented here: https://github.com/tlsfuzzer/python-ecdsa/blob/master/src/ecdsa/numbertheory.py#L178
     fn elliptical_sqrt_mod(&self, modulus: &Self::Output) -> Self::Output {
-        self.sqrt().elliptical_mod(modulus)
+        if self.is_zero() {
+            return BigInt::zero();
+        }
+
+        if modulus == &BigInt::from(2) {
+            return self.clone();
+        }
+
+        // check jacobi
+        // https://github.com/tlsfuzzer/python-ecdsa/blob/master/src/ecdsa/numbertheory.py#L148
+
+        let useful = self.modpow(&((modulus + 1) / 4), modulus);
+
+        if modulus.mod_floor(&BigInt::from(4)) == BigInt::from(3) {
+            return useful;
+        }
+
+        if modulus.mod_floor(&BigInt::from(8)) == BigInt::from(5) {
+            if &useful == &BigInt::one() {
+                return self.modpow(&((modulus + 3) / 8), modulus);
+            } else if &useful == &(modulus - BigInt::one()) {
+                return (BigInt::from(2)
+                    * self
+                    * (self * BigInt::from(4)).modpow(&((modulus - 5) / 8), modulus))
+                .mod_floor(modulus);
+            }
+        }
+
+        panic!("not reached");
     }
 }
 
@@ -57,8 +75,8 @@ impl EllipticalPointValue {
         Self { x, y }
     }
 
-    pub fn compress(&self, point: &EllipticalPointValue) -> EllipticalCompressedPointValue {
-        EllipticalCompressedPointValue::new(point)
+    pub fn compress(&self) -> EllipticalCompressedPointValue {
+        EllipticalCompressedPointValue::new(self)
     }
 
     pub fn x(&self) -> &BigInt {
@@ -75,6 +93,24 @@ pub enum EllipticalCompressedPointParity {
     Even,
 }
 
+impl From<BigInt> for EllipticalCompressedPointParity {
+    fn from(n: BigInt) -> Self {
+        match n.is_even() {
+            true => Self::Even,
+            false => Self::Odd,
+        }
+    }
+}
+
+impl From<&BigInt> for EllipticalCompressedPointParity {
+    fn from(n: &BigInt) -> Self {
+        match n.is_even() {
+            true => Self::Even,
+            false => Self::Odd,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct EllipticalCompressedPointValue {
     x: BigInt,
@@ -83,11 +119,7 @@ pub struct EllipticalCompressedPointValue {
 
 impl EllipticalCompressedPointValue {
     fn new(point: &EllipticalPointValue) -> Self {
-        let parity = if point.y().is_even() {
-            EllipticalCompressedPointParity::Even
-        } else {
-            EllipticalCompressedPointParity::Odd
-        };
+        let parity = EllipticalCompressedPointParity::from(point.y());
 
         Self {
             x: point.x().clone(),
@@ -120,7 +152,7 @@ impl EllipticalCurveParameters {
     pub fn scep256k1() -> Self {
         Self::generic(
             BigInt::zero(),
-            BigInt::new(Sign::Plus, vec![7]),
+            BigInt::from(7),
             BigInt::parse_bytes(
                 b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F",
                 16,
@@ -130,9 +162,9 @@ impl EllipticalCurveParameters {
     }
 
     // Inclusive bounds for the order of all elliptic curves with a given `p`
-    pub fn order_bounds(&self) -> (BigInt, BigInt) {
-        let start = self.p() + BigInt::one();
-        let end = BigInt::from(2) * self.p().sqrt();
+    pub fn order_bounds(&self) -> (BigUint, BigUint) {
+        let start = (self.p() + BigInt::one()).to_biguint().unwrap();
+        let end = (BigInt::from(2) * self.p().sqrt()).to_biguint().unwrap();
         let lower = &start - &end;
         let upper = &start + &end;
 
@@ -161,14 +193,14 @@ impl EllipticalCurveParameters {
 pub struct EllipticalCurve {
     params: EllipticalCurveParameters,
     generator: EllipticalPoint,
-    order: BigInt,
+    order: BigUint,
 }
 
 impl EllipticalCurve {
     pub fn generic_with_order(
         params: EllipticalCurveParameters,
         generator: EllipticalPointValue,
-        order: BigInt,
+        order: BigUint,
     ) -> Self {
         let s = Self {
             params,
@@ -206,7 +238,7 @@ impl EllipticalCurve {
             .unwrap(),
         );
 
-        let order = BigInt::parse_bytes(
+        let order = BigUint::parse_bytes(
             b"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
             16,
         )
@@ -219,18 +251,22 @@ impl EllipticalCurve {
         match point {
             EllipticalPoint::Identity => true,
             EllipticalPoint::Value(p) => {
-                let calculated_y = p.x().elliptical_modpow(&BigInt::from(3), self.params().p())
+                let calculated_y_squared = p.x().modpow(&BigInt::from(3), self.params().p())
                     + self.params().a() * p.x()
                     + self.params().b();
                 let y_squared = p.y().pow(2);
 
-                (calculated_y - y_squared).elliptical_mod(self.params().p()) == BigInt::zero()
+                (calculated_y_squared - y_squared).mod_floor(self.params().p()) == BigInt::zero()
             }
         }
     }
 
     pub fn nth_point(&self, n: &BigUint) -> EllipticalPoint {
-        self.multiply_unsigned(self.generator(), n)
+        let p = self.multiply_unsigned(self.generator(), n);
+
+        assert!(self.contains_point(&p));
+
+        p
     }
 
     pub fn double(&self, point: &EllipticalPoint) -> EllipticalPoint {
@@ -303,24 +339,29 @@ impl EllipticalCurve {
     }
 
     pub fn uncompress(&self, compressed: &EllipticalCompressedPointValue) -> EllipticalPoint {
-        let raw_y_squared =
-            compressed.x().pow(3) + self.params().a() * compressed.x() + self.params().b();
-        let y = raw_y_squared.elliptical_sqrt_mod(self.params().p());
+        let y_squared = (compressed.x().modpow(&BigInt::from(3), self.params().p())
+            + self.params.a() * compressed.x()
+            + self.params.b())
+        .mod_floor(self.params().p());
 
-        // if the pairty matches the parity of the calculated y dont subtract from the prime
-        let actual_y = if compressed.parity() == EllipticalCompressedPointParity::Odd && y.is_odd()
-            || compressed.parity() == EllipticalCompressedPointParity::Even && y.is_even()
-        {
-            y
-        } else {
-            self.params().p() - y
+        let potential_y = y_squared.elliptical_sqrt_mod(self.params().p());
+
+        let y = match EllipticalCompressedPointParity::from(&potential_y) == compressed.parity() {
+            true => potential_y,
+            false => self.params().p() - potential_y,
         };
 
-        let point = EllipticalPoint::with_value(compressed.x().clone(), actual_y);
+        let point = EllipticalPoint::with_value(compressed.x().clone(), y);
 
         assert!(self.contains_point(&point));
 
         point
+    }
+
+    pub fn gen_private_key(&self) -> BigUint {
+        let mut rand = rand::thread_rng();
+
+        rand.gen_biguint_range(&BigUint::zero(), self.order())
     }
 
     pub fn params(&self) -> &EllipticalCurveParameters {
@@ -331,7 +372,7 @@ impl EllipticalCurve {
         &self.generator
     }
 
-    pub fn order(&self) -> &BigInt {
+    pub fn order(&self) -> &BigUint {
         &self.order
     }
 
@@ -349,8 +390,8 @@ impl EllipticalCurve {
         match lambda {
             None => EllipticalPoint::Identity,
             Some(lambda) => {
-                let r_x = (lambda.pow(2) - p.x() - q.x()).elliptical_mod(self.params().p());
-                let r_y = (lambda * (p.x() - &r_x) - p.y()).elliptical_mod(self.params().p());
+                let r_x = (lambda.pow(2) - p.x() - q.x()).mod_floor(self.params().p());
+                let r_y = (lambda * (p.x() - &r_x) - p.y()).mod_floor(self.params().p());
 
                 EllipticalPoint::with_value(r_x, r_y)
             }
