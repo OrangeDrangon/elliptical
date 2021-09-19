@@ -1,6 +1,6 @@
 use core::panic;
 
-use elliptical::{EllipticalCurve, EllipticalPoint};
+use oblong::{EllipticalCurve, EllipticalPoint};
 
 pub fn main() {
     let curve = EllipticalCurve::secp256k1();
