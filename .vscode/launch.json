@@ -7,16 +7,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'elliptical'",
+            "name": "Debug unit tests in library 'oblong'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=elliptical"
+                    "--package=oblong"
                 ],
                 "filter": {
-                    "name": "elliptical",
+                    "name": "oblong",
                     "kind": "lib"
                 }
             },
@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'elliptical'",
+            "name": "Debug executable 'oblong'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=elliptical",
-                    "--package=elliptical"
+                    "--bin=oblong",
+                    "--package=oblong"
                 ],
                 "filter": {
-                    "name": "elliptical",
+                    "name": "oblong",
                     "kind": "bin"
                 }
             },
@@ -44,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'elliptical'",
+            "name": "Debug unit tests in executable 'oblong'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=elliptical",
-                    "--package=elliptical"
+                    "--bin=oblong",
+                    "--package=oblong"
                 ],
                 "filter": {
-                    "name": "elliptical",
+                    "name": "oblong",
                     "kind": "bin"
                 }
             },
