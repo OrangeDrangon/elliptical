@@ -798,12 +798,6 @@ mod test {
             }
 
             uncompress!(
-                uncompress_6_1_on_curve_0_7_37,
-                curve_0_7_37(),
-                EllipticalPointValue::new(BigInt::from(6), BigInt::from(1))
-            );
-
-            uncompress!(
                 uncompress_0_28_on_curve_0_7_37,
                 curve_0_7_37(),
                 EllipticalPointValue::new(BigInt::from(0), BigInt::from(28))
@@ -813,6 +807,18 @@ mod test {
                 uncompress_0_9_on_curve_0_7_37,
                 curve_0_7_37(),
                 EllipticalPointValue::new(BigInt::from(0), BigInt::from(9))
+            );
+
+            uncompress!(
+                uncompress_21_99_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                EllipticalPointValue::new(BigInt::from(21), BigInt::from(99))
+            );
+
+            uncompress!(
+                uncompress_21_15562_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                EllipticalPointValue::new(BigInt::from(21), BigInt::from(15562))
             );
         }
     }
