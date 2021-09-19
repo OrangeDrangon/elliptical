@@ -405,7 +405,7 @@ impl EllipticalCurve {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     mod curve {
