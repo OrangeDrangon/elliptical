@@ -772,5 +772,48 @@ mod test {
                 false
             );
         }
+
+        /// Testing depends on compressed working correctly. May be better to directly construct compressed points.
+        mod uncompress {
+            use super::*;
+
+            macro_rules! uncompress {
+                ($name:ident, $curve:expr, $point:expr) => {
+                    #[test]
+                    fn $name() {
+                        let curve: EllipticalCurve = $curve;
+
+                        let p: EllipticalPointValue = ($point).clone();
+
+                        let compressed = p.compress();
+
+                        let uncompressed = curve.uncompress(&compressed);
+
+                        let expected =
+                            EllipticalPoint::with_value(($point).x().clone(), ($point).y().clone());
+
+                        assert_eq!(expected, uncompressed);
+                    }
+                };
+            }
+
+            uncompress!(
+                uncompress_6_1_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPointValue::new(BigInt::from(6), BigInt::from(1))
+            );
+
+            uncompress!(
+                uncompress_0_28_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPointValue::new(BigInt::from(0), BigInt::from(28))
+            );
+
+            uncompress!(
+                uncompress_0_9_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPointValue::new(BigInt::from(0), BigInt::from(9))
+            );
+        }
     }
 }
