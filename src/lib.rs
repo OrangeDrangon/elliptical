@@ -408,7 +408,7 @@ impl EllipticalCurve {
 mod test {
     use super::*;
 
-    fn test_0_7_37() -> EllipticalCurve {
+    fn curve_0_7_37() -> EllipticalCurve {
         let params =
             EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
 
@@ -417,7 +417,7 @@ mod test {
         EllipticalCurve::generic(params, generator)
     }
 
-    fn test_25_15_15661() -> EllipticalCurve {
+    fn curve_25_15_15661() -> EllipticalCurve {
         let params = EllipticalCurveParameters::generic(
             BigInt::from(25),
             BigInt::from(15),
@@ -429,354 +429,283 @@ mod test {
         EllipticalCurve::generic(params, generator)
     }
 
-    #[test]
-    #[test]
-    fn test_point_doubling_identity_curve_0_7_37() {
-        let curve = test_0_7_37();
+    mod double {
+        use super::*;
 
-        let p = EllipticalPoint::Identity;
+        macro_rules! double {
+            ($name:ident, $curve:expr, $point:expr, $expected:expr) => {
+                #[test]
+                fn $name() {
+                    let curve: EllipticalCurve = $curve;
 
-        let expected = EllipticalPoint::Identity;
-        let result = curve.double(&p);
+                    let p: EllipticalPoint = $point.into();
 
-        assert_eq!(expected, result)
+                    let expected: EllipticalPoint = $expected.into();
+
+                    let res = curve.double(&p);
+
+                    assert_eq!(expected, res);
+                }
+            };
+        }
+
+        double!(
+            point_identity_on_curve_0_7_37,
+            curve_0_7_37(),
+            EllipticalPoint::Identity,
+            EllipticalPoint::Identity
+        );
+
+        double!(point_9_12_on_curve_0_7_37, curve_0_7_37(), (9, 12), (3, 21));
+
+        double!(
+            point_identity_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            EllipticalPoint::Identity,
+            EllipticalPoint::Identity
+        );
+
+        double!(
+            point_233_33_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (233, 33),
+            (7817, 4209)
+        );
     }
 
-    #[test]
-    fn test_point_doubling_6_1_curve_0_7_37() {
-        let curve = test_0_7_37();
+    mod add {
+        use super::*;
 
-        let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
+        macro_rules! add {
+            ($name:ident, $curve:expr, $point:expr, $point2:expr, $expected:expr) => {
+                #[test]
+                fn $name() {
+                    let curve: EllipticalCurve = $curve;
 
-        let expected = EllipticalPoint::with_value(BigInt::from(18), BigInt::from(17));
-        let result = curve.double(&p);
+                    let p: EllipticalPoint = $point.into();
+                    let q: EllipticalPoint = $point2.into();
 
-        assert_eq!(expected, result)
+                    let expected: EllipticalPoint = $expected.into();
+
+                    let res = curve.add_points(&p, &q);
+
+                    assert_eq!(expected, res);
+                }
+            };
+        }
+
+        add!(
+            point_identity_plus_identity_on_curve_0_7_37,
+            curve_0_7_37(),
+            EllipticalPoint::Identity,
+            EllipticalPoint::Identity,
+            EllipticalPoint::Identity
+        );
+
+        add!(
+            point_6_1_plus_6_1_on_curve_0_7_37,
+            curve_0_7_37(),
+            (6, 1),
+            (6, 1),
+            (18, 17)
+        );
+
+        add!(
+            point_6_1_plus_identity_on_curve_0_7_37,
+            curve_0_7_37(),
+            (6, 1),
+            EllipticalPoint::Identity,
+            (6, 1)
+        );
+
+        add!(
+            point_identity_plus_6_1_on_curve_0_7_37,
+            curve_0_7_37(),
+            EllipticalPoint::Identity,
+            (6, 1),
+            (6, 1)
+        );
+
+        add!(
+            point_0_9_plus_0_28_on_curve_0_7_37,
+            curve_0_7_37(),
+            (0, 9),
+            (0, 28),
+            EllipticalPoint::Identity
+        );
+
+        add!(
+            point_6_1_plus_22_6_on_curve_0_7_37,
+            curve_0_7_37(),
+            (6, 1),
+            (22, 6),
+            (13, 13)
+        );
+
+        add!(
+            point_22_6_plus_6_1_on_curve_0_7_37,
+            curve_0_7_37(),
+            (22, 6),
+            (6, 1),
+            (13, 13)
+        );
+
+        add!(
+            point_identity_plus_identity_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            EllipticalPoint::Identity,
+            EllipticalPoint::Identity,
+            EllipticalPoint::Identity
+        );
+
+        add!(
+            point_233_33_plus_233_33_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (233, 33),
+            (233, 33),
+            (7817, 4209)
+        );
+
+        add!(
+            point_94_54_plus_identity_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (94, 54),
+            EllipticalPoint::Identity,
+            (94, 54)
+        );
+
+        add!(
+            point_identity_plus_21_99_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            EllipticalPoint::Identity,
+            (21, 99),
+            (21, 99)
+        );
+
+        add!(
+            point_94_54_plus_21_99_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (94, 54),
+            (21, 99),
+            (13595, 8054)
+        );
     }
 
-    #[test]
-    fn test_point_doubling_9_12_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(3), BigInt::from(21));
-        let result = curve.double(&p);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_doubling_add_6_1_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
-        let q = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(18), BigInt::from(17));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_doubling_add_9_12_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-        let q = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(3), BigInt::from(21));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_identity_plus_identity_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::Identity;
-        let q = EllipticalPoint::Identity;
-
-        let expected = EllipticalPoint::Identity;
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_6_1_plus_identity_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
-        let q = EllipticalPoint::Identity;
-
-        let expected = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_identity_plus_22_6_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::Identity;
-        let q = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_4_2_plus_4_16_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(4), BigInt::from(21));
-        let q = EllipticalPoint::with_value(BigInt::from(4), BigInt::from(16));
-
-        let expected = EllipticalPoint::Identity;
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_add_6_1_plus_22_6_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(6), BigInt::from(1));
-        let q = EllipticalPoint::with_value(BigInt::from(22), BigInt::from(6));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(13), BigInt::from(13));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_add_9_12_plus_32_17_curve_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-        let q = EllipticalPoint::with_value(BigInt::from(32), BigInt::from(17));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(5), BigInt::from(13));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_9_12_times_1_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-        let result = curve.multiply_unsigned(&p, &BigUint::one());
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_9_12_times_2_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(9), BigInt::from(12));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(3), BigInt::from(21));
-        let result = curve.multiply_unsigned(&p, &BigUint::from(2usize));
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_23_1_times_123_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(24), BigInt::from(17));
-        let result = curve.multiply_unsigned(&p, &BigUint::from(123usize));
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_23_1_times_34435322_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(36));
-        let result = curve.multiply_unsigned(&p, &BigUint::from(34435322usize));
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_23_1_times_0_0_7_37() {
-        let curve = test_0_7_37();
-
-        let p = EllipticalPoint::with_value(BigInt::from(23), BigInt::from(1));
-
-        let expected = EllipticalPoint::Identity;
-        let result = curve.multiply_unsigned(&p, &BigUint::zero());
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_doubling_identity_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::Identity;
-
-        let expected = EllipticalPoint::Identity;
-        let result = curve.double(&p);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_doubling_233_33_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(7817), BigInt::from(4209));
-        let result = curve.double(&p);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_doubling_add_6_1_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
-        let q = EllipticalPoint::with_value(BigInt::from(233), BigInt::from(33));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(7817), BigInt::from(4209));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_identity_plus_identity_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::Identity;
-        let q = EllipticalPoint::Identity;
-
-        let expected = EllipticalPoint::Identity;
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_94_54_plus_identity_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-        let q = EllipticalPoint::Identity;
-
-        let expected = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_point_add_identity_plus_21_99_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::Identity;
-        let q = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_add_6_1_plus_22_6_curve_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-        let q = EllipticalPoint::with_value(BigInt::from(21), BigInt::from(99));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(13595), BigInt::from(8054));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_add_94_54_plus_32_17_curve_11946_4901_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-        let q = EllipticalPoint::with_value(BigInt::from(11946), BigInt::from(4901));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(5938), BigInt::from(2424));
-        let result = curve.add_points(&p, &q);
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_94_54_times_1_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-        let result = curve.multiply_unsigned(&p, &BigUint::one());
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_94_54_times_2_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(94), BigInt::from(54));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(13426), BigInt::from(4704));
-        let result = curve.multiply_unsigned(&p, &BigUint::from(2usize));
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_460_120_times_123_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(460), BigInt::from(120));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(438), BigInt::from(912));
-        let result = curve.multiply_unsigned(&p, &BigUint::from(123usize));
-
-        assert_eq!(expected, result)
-    }
-
-    #[test]
-    fn test_multiply_460_120_times_34435322_25_15_15661() {
-        let curve = test_25_15_15661();
-
-        let p = EllipticalPoint::with_value(BigInt::from(460), BigInt::from(120));
-
-        let expected = EllipticalPoint::with_value(BigInt::from(409), BigInt::from(5304));
-        let result = curve.multiply_unsigned(&p, &BigUint::from(34435322usize));
-
-        assert_eq!(expected, result)
+    mod multiply {
+        use super::*;
+
+        macro_rules! multiply {
+            ($name:ident, $curve:expr, $point:expr, $multiplier:expr, $expected:expr) => {
+                #[test]
+                fn $name() {
+                    let curve: EllipticalCurve = $curve;
+
+                    let p: EllipticalPoint = $point.into();
+                    let multiplier: BigUint = $multiplier.into();
+
+                    let expected: EllipticalPoint = $expected.into();
+
+                    let res = curve.multiply_unsigned(&p, &multiplier);
+
+                    assert_eq!(expected, res);
+                }
+            };
+        }
+
+        multiply!(
+            point_identity_times_0_on_curve_0_7_37,
+            curve_0_7_37(),
+            EllipticalPoint::Identity,
+            0u32,
+            EllipticalPoint::Identity
+        );
+
+        multiply!(
+            point_identity_times_10_on_curve_0_7_37,
+            curve_0_7_37(),
+            EllipticalPoint::Identity,
+            10u32,
+            EllipticalPoint::Identity
+        );
+
+        multiply!(
+            point_9_12_times_0_on_curve_0_7_37,
+            curve_0_7_37(),
+            (9, 12),
+            0u32,
+            EllipticalPoint::Identity
+        );
+
+        multiply!(
+            point_9_12_times_1_on_curve_0_7_37,
+            curve_0_7_37(),
+            (9, 12),
+            1u32,
+            (9, 12)
+        );
+
+        multiply!(
+            point_9_12_times_2_on_curve_0_7_37,
+            curve_0_7_37(),
+            (9, 12),
+            2u32,
+            (3, 21)
+        );
+
+        multiply!(
+            point_23_1_times_123_on_curve_0_7_37,
+            curve_0_7_37(),
+            (23, 1),
+            123u32,
+            (24, 17)
+        );
+
+        multiply!(
+            point_23_1_times_34435322_on_curve_0_7_37,
+            curve_0_7_37(),
+            (23, 1),
+            34435322u32,
+            (23, 36)
+        );
+
+        multiply!(
+            point_94_54_times_0_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (94, 54),
+            0u32,
+            EllipticalPoint::Identity
+        );
+
+        multiply!(
+            point_94_54_times_1_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (94, 54),
+            1u32,
+            (94, 54)
+        );
+
+        multiply!(
+            point_94_54_times_2_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (94, 54),
+            2u32,
+            (13426, 4704)
+        );
+
+        multiply!(
+            point_460_120_times_123_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (460, 120),
+            123u32,
+            (438, 912)
+        );
+
+        multiply!(
+            point_460_120_times_134435322_on_curve_25_15_15661,
+            curve_25_15_15661(),
+            (460, 120),
+            34435322u32,
+            (409, 5304)
+        );
     }
 }
