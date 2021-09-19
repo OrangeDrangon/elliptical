@@ -9,7 +9,7 @@ pub fn main() {
 
     let uncompressed_pub_key = match curve.nth_point(&private_key) {
         EllipticalPoint::Value(p) => p,
-        EllipticalPoint::Identity => panic!("Should not be an identity"),
+        EllipticalPoint::Identity => panic!("The identity is not useful"),
     };
 
     let public_key = uncompressed_pub_key.compress();
