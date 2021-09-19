@@ -64,6 +64,12 @@ impl EllipticalPoint {
     }
 }
 
+impl From<(i32, i32)> for EllipticalPoint {
+    fn from((x, y): (i32, i32)) -> Self {
+        Self::with_value(BigInt::from(x), BigInt::from(y))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct EllipticalPointValue {
     x: BigInt,
@@ -423,6 +429,7 @@ mod test {
         EllipticalCurve::generic(params, generator)
     }
 
+    #[test]
     #[test]
     fn test_point_doubling_identity_curve_0_7_37() {
         let curve = test_0_7_37();
