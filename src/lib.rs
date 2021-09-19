@@ -408,304 +408,369 @@ impl EllipticalCurve {
 mod test {
     use super::*;
 
-    fn curve_0_7_37() -> EllipticalCurve {
-        let params =
-            EllipticalCurveParameters::generic(BigInt::from(0), BigInt::from(7), BigInt::from(37));
-
-        let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
-
-        EllipticalCurve::generic(params, generator)
-    }
-
-    fn curve_25_15_15661() -> EllipticalCurve {
-        let params = EllipticalCurveParameters::generic(
-            BigInt::from(25),
-            BigInt::from(15),
-            BigInt::from(15661),
-        );
-
-        let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
-
-        EllipticalCurve::generic(params, generator)
-    }
-
-    mod double {
+    mod curve {
         use super::*;
 
-        macro_rules! double {
-            ($name:ident, $curve:expr, $point:expr, $expected:expr) => {
-                #[test]
-                fn $name() {
-                    let curve: EllipticalCurve = $curve;
+        fn curve_0_7_37() -> EllipticalCurve {
+            let params = EllipticalCurveParameters::generic(
+                BigInt::from(0),
+                BigInt::from(7),
+                BigInt::from(37),
+            );
 
-                    let p: EllipticalPoint = $point.into();
+            let generator = EllipticalPointValue::new(BigInt::from(6), BigInt::from(1));
 
-                    let expected: EllipticalPoint = $expected.into();
-
-                    let res = curve.double(&p);
-
-                    assert_eq!(expected, res);
-                }
-            };
+            EllipticalCurve::generic(params, generator)
         }
 
-        double!(
-            point_identity_on_curve_0_7_37,
-            curve_0_7_37(),
-            EllipticalPoint::Identity,
-            EllipticalPoint::Identity
-        );
+        fn curve_25_15_15661() -> EllipticalCurve {
+            let params = EllipticalCurveParameters::generic(
+                BigInt::from(25),
+                BigInt::from(15),
+                BigInt::from(15661),
+            );
 
-        double!(point_9_12_on_curve_0_7_37, curve_0_7_37(), (9, 12), (3, 21));
+            let generator = EllipticalPointValue::new(BigInt::from(21), BigInt::from(99));
 
-        double!(
-            point_identity_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            EllipticalPoint::Identity,
-            EllipticalPoint::Identity
-        );
-
-        double!(
-            point_233_33_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (233, 33),
-            (7817, 4209)
-        );
-    }
-
-    mod add {
-        use super::*;
-
-        macro_rules! add {
-            ($name:ident, $curve:expr, $point:expr, $point2:expr, $expected:expr) => {
-                #[test]
-                fn $name() {
-                    let curve: EllipticalCurve = $curve;
-
-                    let p: EllipticalPoint = $point.into();
-                    let q: EllipticalPoint = $point2.into();
-
-                    let expected: EllipticalPoint = $expected.into();
-
-                    let res = curve.add_points(&p, &q);
-
-                    assert_eq!(expected, res);
-                }
-            };
+            EllipticalCurve::generic(params, generator)
         }
 
-        add!(
-            point_identity_plus_identity_on_curve_0_7_37,
-            curve_0_7_37(),
-            EllipticalPoint::Identity,
-            EllipticalPoint::Identity,
-            EllipticalPoint::Identity
-        );
+        mod double {
+            use super::*;
 
-        add!(
-            point_6_1_plus_6_1_on_curve_0_7_37,
-            curve_0_7_37(),
-            (6, 1),
-            (6, 1),
-            (18, 17)
-        );
+            macro_rules! double {
+                ($name:ident, $curve:expr, $point:expr, $expected:expr) => {
+                    #[test]
+                    fn $name() {
+                        let curve: EllipticalCurve = $curve;
 
-        add!(
-            point_6_1_plus_identity_on_curve_0_7_37,
-            curve_0_7_37(),
-            (6, 1),
-            EllipticalPoint::Identity,
-            (6, 1)
-        );
+                        let p: EllipticalPoint = $point.into();
 
-        add!(
-            point_identity_plus_6_1_on_curve_0_7_37,
-            curve_0_7_37(),
-            EllipticalPoint::Identity,
-            (6, 1),
-            (6, 1)
-        );
+                        let expected: EllipticalPoint = $expected.into();
 
-        add!(
-            point_0_9_plus_0_28_on_curve_0_7_37,
-            curve_0_7_37(),
-            (0, 9),
-            (0, 28),
-            EllipticalPoint::Identity
-        );
+                        let res = curve.double(&p);
 
-        add!(
-            point_6_1_plus_22_6_on_curve_0_7_37,
-            curve_0_7_37(),
-            (6, 1),
-            (22, 6),
-            (13, 13)
-        );
+                        assert_eq!(expected, res);
+                    }
+                };
+            }
 
-        add!(
-            point_22_6_plus_6_1_on_curve_0_7_37,
-            curve_0_7_37(),
-            (22, 6),
-            (6, 1),
-            (13, 13)
-        );
+            double!(
+                point_identity_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPoint::Identity,
+                EllipticalPoint::Identity
+            );
 
-        add!(
-            point_identity_plus_identity_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            EllipticalPoint::Identity,
-            EllipticalPoint::Identity,
-            EllipticalPoint::Identity
-        );
+            double!(point_9_12_on_curve_0_7_37, curve_0_7_37(), (9, 12), (3, 21));
 
-        add!(
-            point_233_33_plus_233_33_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (233, 33),
-            (233, 33),
-            (7817, 4209)
-        );
+            double!(
+                point_identity_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                EllipticalPoint::Identity,
+                EllipticalPoint::Identity
+            );
 
-        add!(
-            point_94_54_plus_identity_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (94, 54),
-            EllipticalPoint::Identity,
-            (94, 54)
-        );
-
-        add!(
-            point_identity_plus_21_99_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            EllipticalPoint::Identity,
-            (21, 99),
-            (21, 99)
-        );
-
-        add!(
-            point_94_54_plus_21_99_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (94, 54),
-            (21, 99),
-            (13595, 8054)
-        );
-    }
-
-    mod multiply {
-        use super::*;
-
-        macro_rules! multiply {
-            ($name:ident, $curve:expr, $point:expr, $multiplier:expr, $expected:expr) => {
-                #[test]
-                fn $name() {
-                    let curve: EllipticalCurve = $curve;
-
-                    let p: EllipticalPoint = $point.into();
-                    let multiplier: BigUint = $multiplier.into();
-
-                    let expected: EllipticalPoint = $expected.into();
-
-                    let res = curve.multiply_unsigned(&p, &multiplier);
-
-                    assert_eq!(expected, res);
-                }
-            };
+            double!(
+                point_233_33_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (233, 33),
+                (7817, 4209)
+            );
         }
 
-        multiply!(
-            point_identity_times_0_on_curve_0_7_37,
-            curve_0_7_37(),
-            EllipticalPoint::Identity,
-            0u32,
-            EllipticalPoint::Identity
-        );
+        mod add {
+            use super::*;
 
-        multiply!(
-            point_identity_times_10_on_curve_0_7_37,
-            curve_0_7_37(),
-            EllipticalPoint::Identity,
-            10u32,
-            EllipticalPoint::Identity
-        );
+            macro_rules! add {
+                ($name:ident, $curve:expr, $point:expr, $point2:expr, $expected:expr) => {
+                    #[test]
+                    fn $name() {
+                        let curve: EllipticalCurve = $curve;
 
-        multiply!(
-            point_9_12_times_0_on_curve_0_7_37,
-            curve_0_7_37(),
-            (9, 12),
-            0u32,
-            EllipticalPoint::Identity
-        );
+                        let p: EllipticalPoint = $point.into();
+                        let q: EllipticalPoint = $point2.into();
 
-        multiply!(
-            point_9_12_times_1_on_curve_0_7_37,
-            curve_0_7_37(),
-            (9, 12),
-            1u32,
-            (9, 12)
-        );
+                        let expected: EllipticalPoint = $expected.into();
 
-        multiply!(
-            point_9_12_times_2_on_curve_0_7_37,
-            curve_0_7_37(),
-            (9, 12),
-            2u32,
-            (3, 21)
-        );
+                        let res = curve.add_points(&p, &q);
 
-        multiply!(
-            point_23_1_times_123_on_curve_0_7_37,
-            curve_0_7_37(),
-            (23, 1),
-            123u32,
-            (24, 17)
-        );
+                        assert_eq!(expected, res);
+                    }
+                };
+            }
 
-        multiply!(
-            point_23_1_times_34435322_on_curve_0_7_37,
-            curve_0_7_37(),
-            (23, 1),
-            34435322u32,
-            (23, 36)
-        );
+            add!(
+                point_identity_plus_identity_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPoint::Identity,
+                EllipticalPoint::Identity,
+                EllipticalPoint::Identity
+            );
 
-        multiply!(
-            point_94_54_times_0_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (94, 54),
-            0u32,
-            EllipticalPoint::Identity
-        );
+            add!(
+                point_6_1_plus_6_1_on_curve_0_7_37,
+                curve_0_7_37(),
+                (6, 1),
+                (6, 1),
+                (18, 17)
+            );
 
-        multiply!(
-            point_94_54_times_1_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (94, 54),
-            1u32,
-            (94, 54)
-        );
+            add!(
+                point_6_1_plus_identity_on_curve_0_7_37,
+                curve_0_7_37(),
+                (6, 1),
+                EllipticalPoint::Identity,
+                (6, 1)
+            );
 
-        multiply!(
-            point_94_54_times_2_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (94, 54),
-            2u32,
-            (13426, 4704)
-        );
+            add!(
+                point_identity_plus_6_1_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPoint::Identity,
+                (6, 1),
+                (6, 1)
+            );
 
-        multiply!(
-            point_460_120_times_123_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (460, 120),
-            123u32,
-            (438, 912)
-        );
+            add!(
+                point_0_9_plus_0_28_on_curve_0_7_37,
+                curve_0_7_37(),
+                (0, 9),
+                (0, 28),
+                EllipticalPoint::Identity
+            );
 
-        multiply!(
-            point_460_120_times_134435322_on_curve_25_15_15661,
-            curve_25_15_15661(),
-            (460, 120),
-            34435322u32,
-            (409, 5304)
-        );
+            add!(
+                point_6_1_plus_22_6_on_curve_0_7_37,
+                curve_0_7_37(),
+                (6, 1),
+                (22, 6),
+                (13, 13)
+            );
+
+            add!(
+                point_22_6_plus_6_1_on_curve_0_7_37,
+                curve_0_7_37(),
+                (22, 6),
+                (6, 1),
+                (13, 13)
+            );
+
+            add!(
+                point_identity_plus_identity_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                EllipticalPoint::Identity,
+                EllipticalPoint::Identity,
+                EllipticalPoint::Identity
+            );
+
+            add!(
+                point_233_33_plus_233_33_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (233, 33),
+                (233, 33),
+                (7817, 4209)
+            );
+
+            add!(
+                point_94_54_plus_identity_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (94, 54),
+                EllipticalPoint::Identity,
+                (94, 54)
+            );
+
+            add!(
+                point_identity_plus_21_99_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                EllipticalPoint::Identity,
+                (21, 99),
+                (21, 99)
+            );
+
+            add!(
+                point_94_54_plus_21_99_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (94, 54),
+                (21, 99),
+                (13595, 8054)
+            );
+        }
+
+        mod multiply {
+            use super::*;
+
+            macro_rules! multiply {
+                ($name:ident, $curve:expr, $point:expr, $multiplier:expr, $expected:expr) => {
+                    #[test]
+                    fn $name() {
+                        let curve: EllipticalCurve = $curve;
+
+                        let p: EllipticalPoint = $point.into();
+                        let multiplier: BigUint = $multiplier.into();
+
+                        let expected: EllipticalPoint = $expected.into();
+
+                        let res = curve.multiply_unsigned(&p, &multiplier);
+
+                        assert_eq!(expected, res);
+                    }
+                };
+            }
+
+            multiply!(
+                point_identity_times_0_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPoint::Identity,
+                0u32,
+                EllipticalPoint::Identity
+            );
+
+            multiply!(
+                point_identity_times_10_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPoint::Identity,
+                10u32,
+                EllipticalPoint::Identity
+            );
+
+            multiply!(
+                point_9_12_times_0_on_curve_0_7_37,
+                curve_0_7_37(),
+                (9, 12),
+                0u32,
+                EllipticalPoint::Identity
+            );
+
+            multiply!(
+                point_9_12_times_1_on_curve_0_7_37,
+                curve_0_7_37(),
+                (9, 12),
+                1u32,
+                (9, 12)
+            );
+
+            multiply!(
+                point_9_12_times_2_on_curve_0_7_37,
+                curve_0_7_37(),
+                (9, 12),
+                2u32,
+                (3, 21)
+            );
+
+            multiply!(
+                point_23_1_times_123_on_curve_0_7_37,
+                curve_0_7_37(),
+                (23, 1),
+                123u32,
+                (24, 17)
+            );
+
+            multiply!(
+                point_23_1_times_34435322_on_curve_0_7_37,
+                curve_0_7_37(),
+                (23, 1),
+                34435322u32,
+                (23, 36)
+            );
+
+            multiply!(
+                point_94_54_times_0_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (94, 54),
+                0u32,
+                EllipticalPoint::Identity
+            );
+
+            multiply!(
+                point_94_54_times_1_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (94, 54),
+                1u32,
+                (94, 54)
+            );
+
+            multiply!(
+                point_94_54_times_2_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (94, 54),
+                2u32,
+                (13426, 4704)
+            );
+
+            multiply!(
+                point_460_120_times_123_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (460, 120),
+                123u32,
+                (438, 912)
+            );
+
+            multiply!(
+                point_460_120_times_134435322_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (460, 120),
+                34435322u32,
+                (409, 5304)
+            );
+        }
+
+        mod contains {
+            use super::*;
+
+            macro_rules! contains {
+                ($name:ident, $curve:expr, $point:expr, $expected:expr) => {
+                    #[test]
+                    fn $name() {
+                        let curve: EllipticalCurve = $curve;
+
+                        let p: EllipticalPoint = $point.into();
+
+                        let expected: bool = $expected.into();
+
+                        let res = curve.contains_point(&p);
+
+                        assert_eq!(expected, res);
+                    }
+                };
+            }
+
+            contains!(
+                contains_identity_on_curve_0_7_37,
+                curve_0_7_37(),
+                EllipticalPoint::Identity,
+                true
+            );
+
+            contains!(contains_6_1_on_curve_0_7_37, curve_0_7_37(), (6, 1), true);
+
+            contains!(
+                contains_10_10_on_curve_0_7_37,
+                curve_0_7_37(),
+                (10, 10),
+                false
+            );
+
+            contains!(
+                contains_identity_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                EllipticalPoint::Identity,
+                true
+            );
+
+            contains!(
+                contains_21_99_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (21, 99),
+                true
+            );
+
+            contains!(
+                contains_1000_1000_on_curve_25_15_15661,
+                curve_25_15_15661(),
+                (1000, 1000),
+                false
+            );
+        }
     }
 }
