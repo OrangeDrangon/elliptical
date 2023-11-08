@@ -1,4 +1,4 @@
-use num::{BigInt, Integer};
+use num::{bigint::Sign, BigInt, Integer};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EllipticalPoint {
@@ -47,6 +47,23 @@ pub enum EllipticalCompressedPointParity {
     Even,
 }
 
+impl EllipticalCompressedPointParity {
+    fn as_byte(&self) -> u8 {
+        match self {
+            Self::Odd => 0,
+            Self::Even => 1,
+        }
+    }
+
+    fn from_byte(byte: u8) -> Self {
+        match byte {
+            0 => Self::Odd,
+            1 => Self::Even,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl From<BigInt> for EllipticalCompressedPointParity {
     fn from(n: BigInt) -> Self {
         match n.is_even() {
@@ -87,5 +104,36 @@ impl EllipticalCompressedPointValue {
 
     pub fn parity(&self) -> EllipticalCompressedPointParity {
         self.parity.clone()
+    }
+
+    pub fn to_bytes(&self) -> Box<[u8]> {
+        let mut bytes = vec![self.parity().as_byte()];
+        let (sign, x) = self.x().to_bytes_be();
+        let sign = match sign {
+            Sign::Plus => 0,
+            Sign::Minus => 1,
+            _ => unreachable!(),
+        };
+
+        bytes.push(sign);
+        bytes.extend(x);
+
+        bytes.into()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        let parity = EllipticalCompressedPointParity::from_byte(bytes[0]);
+        let sign = match bytes[1] {
+            0 => Sign::Plus,
+            1 => Sign::Minus,
+            _ => unreachable!(),
+        };
+
+        let value = &bytes[2..];
+
+        Self {
+            parity,
+            x: BigInt::from_bytes_be(sign, value),
+        }
     }
 }
