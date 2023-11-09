@@ -19,7 +19,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    KeyPair {
+    Generate {
         #[arg(short, long, default_value_t = 1)]
         count: usize,
     },
@@ -167,7 +167,7 @@ pub fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::KeyPair { count } => generate_key_pair(count),
+        Command::Generate { count } => generate_key_pair(count),
         Command::Encrypt {
             my_private_key,
             their_public_key,
